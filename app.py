@@ -52,8 +52,8 @@ def search_invoices():
     status = request.args.get("status")
     limit = min(int(request.args.get("limit", 50)), 200)
 
-    query = f"SELECT id, customer, number, status, total_cents, issued_on FROM invoices WHERE customer LIKE '%{customer}%'"
-    params = []
+    query = "SELECT id, customer, number, status, total_cents, issued_on FROM invoices WHERE customer LIKE ?"
+    params = [f"%{customer}%"]
     if status:
         query += " AND status = ?"
         params.append(status)
