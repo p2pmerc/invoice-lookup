@@ -34,6 +34,22 @@ class InvoiceSearchTests(unittest.TestCase):
         res = self.client.get("/invoices?customer=&status=sent", headers=self.headers)
         self.assertEqual([i["number"] for i in res.get_json()["invoices"]], ["INV-2"])
 
+    def test_customer_filter_is_not_injectable(self):
+        payload = "' OR 1=1 --"
+        res = self.client.get("/invoices", query_string={"customer": payload}, headers=self.headers)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.get_json()["invoices"], [])
+
+    def test_quote_in_customer_name_is_matched_literally(self):
+        import sqlite3
+        with sqlite3.connect(invoice_app.DB_PATH) as conn:
+            conn.execute(
+                "INSERT INTO invoices (customer, number, status, total_cents, issued_on) VALUES (?,?,?,?,?)",
+                ("O'Brien & Sons", "INV-3", "paid", 900, "2026-03-01"),
+            )
+        res = self.client.get("/invoices", query_string={"customer": "O'Brien"}, headers=self.headers)
+        self.assertEqual([i["number"] for i in res.get_json()["invoices"]], ["INV-3"])
+
 
 if __name__ == "__main__":
     unittest.main()
